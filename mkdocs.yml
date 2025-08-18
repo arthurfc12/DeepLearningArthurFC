@@ -1,8 +1,9 @@
-site_name: Template de Entrega
-site_author: Sandmann, H.
+site_name: Redes Neurais e Deep Learning - Arthur Carvalho
+site_description: Documentação do curso de Redes Neurais e Deep Learning - Arthur Carvalho
+site_author: Carvalho, Arthur
 site_url: https://hsandmann.github.io/documentation.template
-repo_url: https://github.com/hsandmann/documentation.template
-repo_name: github/documentation.template
+repo_url: https://github.com/arthurfc12/DeepLearningArthurFC#
+repo_name: DeepLearningArthurFC
 
 theme:
   name: material
