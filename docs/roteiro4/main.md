@@ -1,4 +1,4 @@
-Se chegou aqui, é porque você está interessado em saber mais. Logo, de brinde, como rodar um código `Python` aqui.
+# Se chegou aqui, é porque você está interessado em saber mais. Logo, de brinde, como rodar um código `Python` aqui
 
 ``` python exec="on" html="1"
 --8<-- "./docs/roteiro4/limit.def.py"
@@ -8,10 +8,9 @@ Se chegou aqui, é porque você está interessado em saber mais. Logo, de brinde
 --8<-- "./docs/roteiro4/smc.py"
 ```
 
-
 [Markdown-exec](https://pawamoy.github.io/markdown-exec/usage/){:target='_blank'} é uma extensão do [Markdown](https://www.markdownguide.org/){:target='_blank'} que permite executar código Python diretamente no Markdown. Isso é útil para gerar resultados dinâmicos ou executar scripts de forma interativa.
 
-# Roteiro 1 - Data Preparation and Analysis for Neural Networks
+## Roteiro 1 - Data Preparation and Analysis for Neural Networks
 
 This activity is designed to test your skills in generating synthetic datasets, handling real-world data challenges, and preparing data to be fed into neural networks.
 
@@ -88,11 +87,7 @@ Conforme ilustrado acima, a tela inicial do MAAS apresenta um dashboard com info
 
 ## App
 
-
-
 ### Tarefa 1
-
-### Tarefa 2
 
 Exemplo de diagrama
 
@@ -177,9 +172,7 @@ sequenceDiagram
   end  
 ```
 
-
 Running the code below in Browser (Woooooowwwwww!!!!!!). [^1]
-
 
 ``` pyodide install="pandas,ssl"
 import ssl
@@ -195,4 +188,3 @@ print(df)
 ```
 
 [^1]: [Pyodide](https://pawamoy.github.io/markdown-exec/usage/pyodide/){target="_blank"}
-

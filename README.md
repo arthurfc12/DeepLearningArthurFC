@@ -1,4 +1,4 @@
-## Setup
+# Setup
 
 Para utilizar o código deste repositório, siga as instruções a seguir:
 
