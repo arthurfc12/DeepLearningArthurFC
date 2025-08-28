@@ -1,1 +1,3 @@
-Aqui vai toda a documentação do projeto, incluindo o que já foi feito e o que falta fazer.
+# Projeto Classification
+
+### Grupo - Arthur Carvalho e XXXXXX
