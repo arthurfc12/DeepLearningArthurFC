@@ -1,3 +1,3 @@
-# Projeto Classification
+# Spotify Classification project
 
-### Grupo - Arthur Carvalho e XXXXXX
+## Author - Arthur Carvalho

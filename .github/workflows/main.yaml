@@ -1,34 +1,47 @@
 name: ci
+
 on:
-  - push
-  - pull_request
-  
+  push:
+    branches: [ main ]         # deploy only on pushes to main
+  pull_request:
+    branches: [ main ]         # CI can still run on PRs (no deploy)
+
+# Needed so the job can push to gh-pages
+permissions:
+  contents: write
+
 # Environment
 env:
   CI: true
-  PYTHON_VERSION: 3.12
+  PYTHON_VERSION: '3.12'
 
-# Jobs to run
+# Avoid overlapping deploys
+concurrency:
+  group: mkdocs-deploy
+  cancel-in-progress: true
+
 jobs:
-     
   # Build and deploy documentation site
   deploy:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push'    # deploy only on push (not PR)
     runs-on: ubuntu-latest
     steps:
-
-      # Checkout source form GitHub
-      - uses: actions/checkout@v4
+      # Checkout source from GitHub (full history for git-* plugins)
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # Install Python runtime and dependencies
-      - uses: actions/setup-python@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      # pip
-      - run: |
-          pip install -r requirements.txt
-          
-      # deploy
-      - run: |
-          mkdocs gh-deploy --force
+      # Install deps from requirements.txt (mkdocs + plugins)
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Deploy with mkdocs (pushes to gh-pages via ghp-import)
+      - name: Deploy
+        run: mkdocs gh-deploy --force
