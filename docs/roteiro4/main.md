@@ -1,190 +1,196 @@
-# Se chegou aqui, é porque você está interessado em saber mais. Logo, de brinde, como rodar um código `Python` aqui
+# Variational Autoencoder (VAE) on Fashion-MNIST
 
-``` python exec="on" html="1"
---8<-- "./docs/roteiro4/limit.def.py"
+Deep Learning – Course Project Report
+
+## 1. Introduction
+
+This project implements a Variational Autoencoder (VAE) trained on the Fashion-MNIST dataset.  
+The goal is to learn a compressed latent representation of clothing images that allows:
+
+- Reconstruction of input images
+- Generation of new synthetic fashion items
+- Continuous interpolation in latent space
+- Visualization of learned data clusters
+
+## 2. Model Overview
+
+The VAE consists of two neural networks:
+
+| Component       | Description                                                                                       |
+|----------       |---------------------------------------------------------------------------------------------------|
+| Encoder         | Convolutional layers followed by fully connected layers to generate mean μ and log-variance logσ² |
+| Latent Sampling | Reparameterization trick: z = μ + σ ⊙ ε                                                          |
+| Decoder         | Fully connected layer followed by transpose convolutions to reconstruct images                    |
+
+### Latent Variable Sampling
+
+```python
+def reparameterize(self, mu, logvar):
+    std = torch.exp(0.5 * logvar)
+    eps = torch.randn_like(std)
+    return mu + eps * std
 ```
 
-``` python exec="on" html="1"
---8<-- "./docs/roteiro4/smc.py"
+This maintains differentiability required for backpropagation.
+
+## 3. Training Setup
+
+Setting         |Value
+Dataset         |Fashion-MNIST (train + validation split)
+Input size      |1 × 28 × 28
+Latent dimension|20
+Loss            |Binary Cross-Entropy (BCE) + KL divergence
+Optimizer       |Adam with learning rate 1e-3
+Epochs          |15
+Batch size      |128
+
+The VAE optimizes the Evidence Lower Bound (ELBO):
+
+𝐿=BCE(𝑥,𝑥^)+𝛽⋅KL(𝑞(𝑧∣𝑥)∥𝑝(𝑧))
+
+where β = 1.0.
+
+## 4. Training Results
+
+Example epoch summary:
+
+```yaml
+Epoch 15 | train loss: 237.84 | val loss: 237.92 
 ```
 
-[Markdown-exec](https://pawamoy.github.io/markdown-exec/usage/){:target='_blank'} é uma extensão do [Markdown](https://www.markdownguide.org/){:target='_blank'} que permite executar código Python diretamente no Markdown. Isso é útil para gerar resultados dinâmicos ou executar scripts de forma interativa.
+Interpretation:
 
-## Roteiro 1 - Data Preparation and Analysis for Neural Networks
+- Training and validation metrics are nearly identical → no overfitting
+- KL divergence remains non-zero → latent space is being use.
+- Visualization of loss curves below.
 
-This activity is designed to test your skills in generating synthetic datasets, handling real-world data challenges, and preparing data to be fed into neural networks.
+![Loss Curve](losscurve.png)
 
-## Excercise 1 - Exploring Class Separability in 2D
+## 5. Reconstruction Results
 
-generate and visualize a two-dimensional dataset to explore how data distribution affects the complexity of the decision boundaries a neural network would need to learn.
+![Reconstruction](reconstruction.png)
 
-### Generate the Data
+Observations:
 
-Start by importing necessary libraries for this project:
+- Major clothing shapes are preserved
+- Blurriness is visible → common trade-off in VAEs
+- High-level semantics captured successfully
+- Code used to generate reconstructions:
 
-<!-- termynal -->
+```python
+def show_reconstructions(model, dataset, n=8):
+    model.eval()
+    n = min(n, 16)
+    with torch.no_grad():
+        x = next(iter(DataLoader(dataset, batch_size=n)))[0].to(device)
+        x_hat, _, _, _ = model(x)
+    x = x.detach().cpu().numpy()
+    x_hat = x_hat.detach().cpu().numpy()
+    
+    rows = 2
+    cols = n
+    fig, axes = plt.subplots(rows, cols, figsize=(1.5*cols, 3))
+    for i in range(n):
+        axes[0, i].imshow(x[i,0], cmap="gray")
+        axes[0, i].axis("off")
+        axes[1, i].imshow(x_hat[i,0], cmap="gray")
+        axes[1, i].axis("off")
+    axes[0,0].set_ylabel("Input", rotation=90)
+    axes[1,0].set_ylabel("Recon", rotation=90)
+    plt.tight_layout()
+    plt.show()
 
-``` bash
-pip install matplotlib pandas scikit-learn numpy
+show_reconstructions(vae, val_ds, n=8)
 ```
 
-Create a synthetic dataset with a total of 400 samples, divided equally among 4 classes (100 samples each). Use a Gaussian distribution to generate the points for each class based on the following parameters:
+## 6. Generating New Samples
 
-- Class 0: Mean = [2,3] , Standard Deviation = [0.8,2.5]
-- Class 1: Mean = [5,6], Standard Deviation = [1.2,1.9]
-- Class 2: Mean = [8,1], Standard Deviation = [0.9,0.9]
-- Class 3: Mean = [15,4], Standard Deviation = [0.5,2.0]
+Random latent vectors generated from:
 
-``` pyodide install="pandas,matplotlib,scikit-learn,numpy"
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+𝑧∼𝑁(0,𝐼)
 
-rng = np.random.default_rng(42)
+Decoded to produce synthetic clothing:
 
-params = {
-    0: {"mean": np.array([2.0, 3.0]), "std": np.array([0.8, 2.5])},
-    1: {"mean": np.array([5.0, 6.0]), "std": np.array([1.2, 1.9])},
-    2: {"mean": np.array([8.0, 1.0] ), "std": np.array([0.9, 0.9])},
-    3: {"mean": np.array([15.0, 4.0]), "std": np.array([0.5, 2.0])},
-}
+![Generated](generated.png)
 
-n_samples_class = 100
+Insight: The model generalizes beyond the training set and can create valid new items.
 
-data_list = []
-for cls, p in params.items():
-    samples = rng.normal(loc=p["mean"], scale=p["std"], size=(n_samples_class, 2))
-    labels = np.full((n_samples_class, 1), cls, dtype=int)
-    data_list.append(np.hstack([samples, labels]))
+Code:
 
-# Combine
-data = np.vstack(data_list)
-df = pd.DataFrame(data, columns=["x1", "x2", "label"]).astype({"label": int})
+```python
+def show_samples_from_prior(model, n=16):
+    model.eval()
+    side = int(math.sqrt(n))
+    with torch.no_grad():
+        z = torch.randn(n, model.latent_dim, device=device)
+        x_hat = model.decode(z).detach().cpu().numpy()
+    fig, axes = plt.subplots(side, side, figsize=(1.5*side, 1.5*side))
+    idx = 0
+    for r in range(side):
+        for c in range(side):
+            axes[r, c].imshow(x_hat[idx, 0], cmap="gray")
+            axes[r, c].axis("off")
+            idx += 1
+    plt.tight_layout()
+    plt.show()
 
-# Shuffle rows
-df = df.sample(frac=1.0, random_state=123).reset_index(drop=True)
-
-# Save to CSV
-csv_path = "synthetic_gaussian_4class_400.csv"
-df.to_csv(csv_path, index=False)
-
-# Show class counts
-counts = df["label"].value_counts().sort_index()
-
-# Display a preview to the user
-df.head(500)
-
+show_samples_from_prior(vae, n=16)
 ```
 
-![Tela do Dashboard do MAAS](./maas.png)
-/// caption
-Dashboard do MAAS
-///
+## 7. Latent Space Interpolation
 
-Conforme ilustrado acima, a tela inicial do MAAS apresenta um dashboard com informações sobre o estado atual dos servidores gerenciados. O dashboard é composto por diversos painéis, cada um exibindo informações sobre um aspecto específico do ambiente gerenciado. Os painéis podem ser configurados e personalizados de acordo com as necessidades do usuário.
+Interpolation between two random items to demonstrate smooth transitions:
 
-### Tarefa 2
+![Latent Interpolation](latentinter.png)
 
-## App
+This indicates the latent space encodes semantic continuity.
 
-### Tarefa 1
+Example code:
 
-Exemplo de diagrama
-
-```mermaid
-architecture-beta
-    group api(cloud)[API]
-
-    service db(database)[Database] in api
-    service disk1(disk)[Storage] in api
-    service disk2(disk)[Storage] in api
-    service server(server)[Server] in api
-
-    db:L -- R:server
-    disk1:T -- B:server
-    disk2:T -- B:db
+```python
+z1 = torch.randn(1, vae.latent_dim, device=device)
+z2 = torch.randn(1, vae.latent_dim, device=device)
+alphas = torch.linspace(0, 1, steps=10, device=device).view(-1,1)
+z_interp = (1 - alphas) * z1 + alphas * z2
+x_hat = vae.decode(z_interp)
 ```
 
-[Mermaid](https://mermaid.js.org/syntax/architecture.html){:target="_blank"}
+## 8. Latent Space Visualization
 
-## Questionário, Projeto ou Plano
+The 20-dimensional latent space was reduced to 2D using PCA:
 
-Esse seção deve ser preenchida apenas se houver demanda do roteiro.
+![Latent Visualization](latentvis.png)
 
-## Discussões
+Findings:
 
-Quais as dificuldades encontradas? O que foi mais fácil? O que foi mais difícil?
+- Clear grouping of visually similar categories
+- Items like shirts and pullovers overlap due to similar silhouettes
+- More distinct classes such as trousers cluster tightly
 
-## Conclusão
+## 9. Challenges and Improvements
 
-O que foi possível concluir com a realização do roteiro?
+### Challenges
 
-### Diagrama de Classes do Banco
+- Blurry outputs due to balance between KL and reconstruction loss
+- Small latent space limits fine detail representation
 
-``` mermaid
-classDiagram
-    class Conta {
-        - String id
-        # double saldo
-        - Cliente cliente
-        + sacar(double valor)
-        + depositar(double valor)
-    }
-    class Cliente {
-        - String id
-        - String nome
-        - List<Conta> contas
-    }
-    class PessoaFisica {
-        - String cpf
-    }
-    class PessoaJuridica {
-        - String cnpj
-    }
-    class ContaCorrente {
-        - double limite
-        + sacar(double valor)
-    }
-    class ContaPoupanca {
-        + sacar(double valor)
-    }
-    Conta *-- Cliente
-    Conta <|-- ContaCorrente
-    Conta <|-- ContaPoupanca
-    Cliente <|-- PessoaFisica
-    Cliente <|-- PessoaJuridica
-```
+### Potential Improvements
 
-### Diagrama de Seqüência de Autorização
+|Modification                  |Expected Effect                |
+|--------------------------------------------------------------|
+|Larger latent dimension       |Better detail retention        |
+|Skip connections (U-Net style)|Sharper reconstructions        |
+|Perceptual or MSE loss        |Improved texture               |
+|β-VAE tuning (β < 1)          |Higher fidelity reconstructions|
+|Longer training               |Better convergence             |
 
-``` mermaid
-sequenceDiagram
-  autonumber
-  actor User
-  User->>Auth Service: request with token
-  Auth Service->>Auth Service: decodes the token and extracts claims
-  Auth Service->>Auth Service: verifies permissions
-  critical allowed
-    Auth Service->>Secured Resource: authorizes the request
-    Secured Resource->>User: returns the response
-  option denied
-    Auth Service-->>User: unauthorized message
-  end  
-```
+## 10. Conclusions
 
-Running the code below in Browser (Woooooowwwwww!!!!!!). [^1]
+This project demonstrates that a convolutional VAE:
 
-``` pyodide install="pandas,ssl"
-import ssl
-import pandas as pd
+- Learns a structured latent representation of clothing
+- Generates semantically valid new items
+- Reconstructs input images with good shape preservation
+- Creates meaningful latent manifolds for clustering and interpolation
 
-df = pd.DataFrame()
-df['AAPL'] = pd.Series([1, 2, 3])
-df['MSFT'] = pd.Series([4, 5, 6])
-df['GOOGL'] = pd.Series([7, 8, 9])
-
-print(df)
-
-```
-
-[^1]: [Pyodide](https://pawamoy.github.io/markdown-exec/usage/pyodide/){target="_blank"}
+Although blurry outputs are a limitation, the VAE shows strong representation learning and generative modeling performance on Fashion-MNIST.
