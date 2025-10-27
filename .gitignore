@@ -5,3 +5,4 @@ env/
 target/
 .venv/
 __pycache__/
+src/labs/4 - VAE/fashion-mnist_train.csv
