@@ -5,3 +5,4 @@ env/
 target/
 .venv/
 __pycache__/
+src/trash_deeplearning_regression_project
